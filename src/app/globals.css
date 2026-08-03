@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+:root {
+  --surface: #fbfbfb;
+  --panel: #ffffff;
+  --line: #e6e6e9;
+  --ink: #18181b;
+  --muted: #71717a;
+  --accent: #2f6fed;
+  --hover: #f1f1f3;
+}
+
+html, body { height: 100%; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); -webkit-font-smoothing: antialiased; }
