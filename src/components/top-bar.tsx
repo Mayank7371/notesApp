@@ -1,24 +1,27 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { Moon, PanelLeft, Sun } from "lucide-react";
+import { Columns2, Moon, PanelLeft, PanelLeftClose, Sun, PencilRuler, FileText } from "lucide-react";
+import type { LayoutMode } from "@/lib/types";
 
 type Props = {
   title: string | null;
   onTitle: (t: string) => void;
   libOpen: boolean;
   onToggleLib: () => void;
+  layout: LayoutMode;
+  onLayout: (l: LayoutMode) => void;
 };
 
 const btn = "grid size-8 place-items-center rounded text-muted transition-colors hover:bg-hover hover:text-ink";
 
-export function TopBar({ title, onTitle, libOpen, onToggleLib }: Props) {
+export function TopBar({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: Props) {
   const { resolvedTheme, setTheme } = useTheme();
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-panel px-2">
       <button type="button" className={btn} onClick={onToggleLib} title="Toggle notes library">
-        <PanelLeft size={16} />
+        {libOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
       </button>
       <span className="hidden text-sm font-semibold tracking-tight sm:block">Notes + Canvas</span>
       <div className="mx-2 h-4 w-px bg-line" />
@@ -32,6 +35,11 @@ export function TopBar({ title, onTitle, libOpen, onToggleLib }: Props) {
       ) : (
         <span className="flex-1 px-2 text-sm text-muted">No note open</span>
       )}
+      <div className="hidden items-center md:flex" role="group">
+        <button type="button" className={btn} onClick={() => onLayout("notes")} title="Focus notes"><FileText size={15} /></button>
+        <button type="button" className={btn} onClick={() => onLayout("split")} title="Split view"><Columns2 size={15} /></button>
+        <button type="button" className={btn} onClick={() => onLayout("canvas")} title="Focus canvas"><PencilRuler size={15} /></button>
+      </div>
       <button
         type="button"
         className={btn}
