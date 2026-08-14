@@ -1,20 +1,34 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { FileText, Search } from "lucide-react";
 import type { NoteMeta } from "@/lib/types";
 
 type Props = {
   notes: NoteMeta[];
   activeId: string | null;
+  query: string;
+  onQuery: (q: string) => void;
   onSelect: (id: string) => void;
 };
 
-export function NotesLibrary({ notes, activeId, onSelect }: Props) {
+export function NotesLibrary({ notes, activeId, query, onQuery, onSelect }: Props) {
+  const shown = notes.filter((n) => n.title.toLowerCase().includes(query.trim().toLowerCase()));
+
   return (
     <nav className="flex h-full w-64 shrink-0 flex-col border-r border-line bg-panel">
-      <div className="p-2 text-xs font-semibold uppercase text-muted">Notes</div>
+      <div className="flex items-center gap-2 p-2">
+        <label className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded border border-line px-2 text-muted focus-within:border-accent">
+          <Search size={14} />
+          <input
+            value={query}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder="Search notes"
+            className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+          />
+        </label>
+      </div>
       <ul className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
-        {notes.map((n) => (
+        {shown.map((n) => (
           <li key={n.id}>
             <button
               type="button"
