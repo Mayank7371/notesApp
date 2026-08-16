@@ -11,8 +11,18 @@ type Props = {
   onSelect: (id: string) => void;
 };
 
+function ago(ts: number) {
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  return h < 24 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
+}
+
 export function NotesLibrary({ notes, activeId, query, onQuery, onSelect }: Props) {
-  const shown = notes.filter((n) => n.title.toLowerCase().includes(query.trim().toLowerCase()));
+  const shown = notes
+    .filter((n) => n.title.toLowerCase().includes(query.trim().toLowerCase()))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
 
   return (
     <nav className="flex h-full w-64 shrink-0 flex-col border-r border-line bg-panel">
@@ -38,7 +48,10 @@ export function NotesLibrary({ notes, activeId, query, onQuery, onSelect }: Prop
               }`}
             >
               <FileText size={15} className="mt-0.5 shrink-0 text-muted" />
-              <span className="truncate text-sm">{n.title || "Untitled"}</span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm">{n.title || "Untitled"}</span>
+                <span className="block text-xs text-muted">{ago(n.updatedAt)}</span>
+              </span>
             </button>
           </li>
         ))}
