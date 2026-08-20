@@ -12,6 +12,7 @@ export function Workspace() {
   const [query, setQuery] = useState("");
   const [libOpen, setLibOpen] = useState(true);
   const [layout, setLayout] = useState<LayoutMode>("split");
+  const [split, setSplit] = useState(50);
 
   const createNote = () => {
     const id = crypto.randomUUID();
@@ -28,6 +29,7 @@ export function Workspace() {
     setNotes((all) => all.map((n) => (n.id === activeId ? { ...n, title } : n)));
 
   const active = notes.find((n) => n.id === activeId) ?? null;
+  const notesWidth = layout === "split" ? `${split}%` : layout === "notes" ? "100%" : "0%";
 
   return (
     <div className="flex h-dvh flex-col">
@@ -51,9 +53,16 @@ export function Workspace() {
             onDelete={deleteNote}
           />
         )}
-        <div className="flex-1 p-6">
-          <p className="text-sm font-medium">{active?.title || "No note selected"}</p>
-        </div>
+        {active && (
+          <div className="relative flex min-h-0 flex-1" style={{ ["--notes-w" as string]: notesWidth }}>
+            <section className="h-full bg-panel md:w-(--notes-w) md:shrink-0 p-6 overflow-y-auto">
+              <h2 className="text-xl font-bold">{active.title || "Untitled"}</h2>
+            </section>
+            <section className="hidden md:flex flex-1 items-center justify-center bg-surface border-l border-line text-muted text-sm">
+              Canvas panel placeholder
+            </section>
+          </div>
+        )}
       </div>
     </div>
   );
