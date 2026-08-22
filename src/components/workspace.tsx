@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { MOCK_NOTES } from "@/lib/mock-notes";
 import type { LayoutMode, NoteMeta } from "@/lib/types";
 import { NotesLibrary } from "./notes-library";
@@ -13,6 +13,8 @@ export function Workspace() {
   const [libOpen, setLibOpen] = useState(true);
   const [layout, setLayout] = useState<LayoutMode>("split");
   const [split, setSplit] = useState(50);
+  const [dragging, setDragging] = useState(false);
+  const area = useRef<HTMLDivElement>(null);
 
   const createNote = () => {
     const id = crypto.randomUUID();
@@ -27,6 +29,12 @@ export function Workspace() {
 
   const rename = (title: string) =>
     setNotes((all) => all.map((n) => (n.id === activeId ? { ...n, title } : n)));
+
+  const moveDivider = (clientX: number) => {
+    const box = area.current?.getBoundingClientRect();
+    if (!box) return;
+    setSplit(Math.min(80, Math.max(20, ((clientX - box.left) / box.width) * 100)));
+  };
 
   const active = notes.find((n) => n.id === activeId) ?? null;
   const notesWidth = layout === "split" ? `${split}%` : layout === "notes" ? "100%" : "0%";
@@ -54,10 +62,21 @@ export function Workspace() {
           />
         )}
         {active && (
-          <div className="relative flex min-h-0 flex-1" style={{ ["--notes-w" as string]: notesWidth }}>
+          <div ref={area} className="relative flex min-h-0 flex-1" style={{ ["--notes-w" as string]: notesWidth }}>
             <section className="h-full bg-panel md:w-(--notes-w) md:shrink-0 p-6 overflow-y-auto">
               <h2 className="text-xl font-bold">{active.title || "Untitled"}</h2>
             </section>
+            {layout === "split" && (
+              <div
+                role="separator"
+                onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setDragging(true); }}
+                onPointerMove={(e) => dragging && moveDivider(e.clientX)}
+                onPointerUp={() => setDragging(false)}
+                className={`hidden w-px shrink-0 cursor-col-resize bg-line transition-colors md:block ${
+                  dragging ? "bg-accent" : "hover:bg-accent"
+                }`}
+              />
+            )}
             <section className="hidden md:flex flex-1 items-center justify-center bg-surface border-l border-line text-muted text-sm">
               Canvas panel placeholder
             </section>
