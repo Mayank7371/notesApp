@@ -38,6 +38,7 @@ export function Workspace() {
 
   const active = notes.find((n) => n.id === activeId) ?? null;
   const notesWidth = layout === "split" ? `${split}%` : layout === "notes" ? "100%" : "0%";
+  const slide = dragging ? "" : "md:transition-[width] md:duration-150";
 
   return (
     <div className="flex h-dvh flex-col">
@@ -63,15 +64,21 @@ export function Workspace() {
         )}
         {active && (
           <div ref={area} className="relative flex min-h-0 flex-1" style={{ ["--notes-w" as string]: notesWidth }}>
-            <section className="h-full bg-panel md:w-(--notes-w) md:shrink-0 p-6 overflow-y-auto">
+            <section className={`h-full bg-panel md:w-(--notes-w) md:shrink-0 p-6 overflow-y-auto ${slide}`}>
               <h2 className="text-xl font-bold">{active.title || "Untitled"}</h2>
             </section>
             {layout === "split" && (
               <div
                 role="separator"
+                tabIndex={0}
                 onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setDragging(true); }}
                 onPointerMove={(e) => dragging && moveDivider(e.clientX)}
                 onPointerUp={() => setDragging(false)}
+                onDoubleClick={() => setSplit(50)}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowLeft") setSplit((s) => Math.max(20, s - 2));
+                  if (e.key === "ArrowRight") setSplit((s) => Math.min(80, s + 2));
+                }}
                 className={`hidden w-px shrink-0 cursor-col-resize bg-line transition-colors md:block ${
                   dragging ? "bg-accent" : "hover:bg-accent"
                 }`}
