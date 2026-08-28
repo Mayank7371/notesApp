@@ -3,6 +3,8 @@
 import { EditorContent, useEditor, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
 import { common, createLowlight } from "lowlight";
 
 const lowlight = createLowlight(common);
@@ -20,6 +22,8 @@ export function NoteEditor({ noteId, getDoc, onChange }: Props) {
     extensions: [
       StarterKit.configure({ codeBlock: false }),
       CodeBlockLowlight.configure({ lowlight }),
+      TaskList,
+      TaskItem.configure({ nested: true }),
     ],
     onUpdate: ({ editor }) => onChange(noteId, editor.getJSON()),
   });
