@@ -6,7 +6,7 @@ import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { common, createLowlight } from "lowlight";
-import { Bold, Code, Heading2, Italic, List, ListChecks, ListOrdered, Quote, Strikethrough, Underline } from "lucide-react";
+import { Bold, Code, Heading2, Italic, Link2, List, ListChecks, ListOrdered, Quote, Strikethrough, Underline } from "lucide-react";
 
 const lowlight = createLowlight(common);
 
@@ -21,7 +21,7 @@ export function NoteEditor({ noteId, getDoc, onChange }: Props) {
     immediatelyRender: false,
     content: getDoc(noteId),
     extensions: [
-      StarterKit.configure({ codeBlock: false }),
+      StarterKit.configure({ codeBlock: false, link: { openOnClick: false, autolink: true } }),
       CodeBlockLowlight.configure({ lowlight }),
       TaskList,
       TaskItem.configure({ nested: true }),
@@ -55,11 +55,19 @@ function Toolbar({ editor }: { editor: Editor | null }) {
       task: editor?.isActive("taskList") ?? false,
       quote: editor?.isActive("blockquote") ?? false,
       code: editor?.isActive("codeBlock") ?? false,
+      link: editor?.isActive("link") ?? false,
     }),
   });
   if (!editor || !active) return <div className="h-10 border-b border-line" />;
 
   const run = () => editor.chain().focus();
+  const setLink = () => {
+    const url = window.prompt("Link URL", editor.getAttributes("link").href ?? "");
+    if (url === null) return;
+    if (url === "") run().unsetLink().run();
+    else run().setLink({ href: url }).run();
+  };
+
   const items = [
     { label: "Heading", Icon: Heading2, on: active.h2, act: () => run().toggleHeading({ level: 2 }).run() },
     { label: "Bold", Icon: Bold, on: active.bold, act: () => run().toggleBold().run() },
@@ -71,6 +79,7 @@ function Toolbar({ editor }: { editor: Editor | null }) {
     { label: "Checklist", Icon: ListChecks, on: active.task, act: () => run().toggleTaskList().run() },
     { label: "Quote", Icon: Quote, on: active.quote, act: () => run().toggleBlockquote().run() },
     { label: "Code block", Icon: Code, on: active.code, act: () => run().toggleCodeBlock().run() },
+    { label: "Link", Icon: Link2, on: active.link, act: setLink },
   ];
 
   return (
