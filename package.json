@@ -20,7 +20,8 @@
     "@tiptap/extension-code-block-lowlight": "^3.31.4",
     "lowlight": "^3.3.0",
     "@tiptap/extension-task-list": "^3.31.4",
-    "@tiptap/extension-task-item": "^3.31.4"
+    "@tiptap/extension-task-item": "^3.31.4",
+    "@excalidraw/excalidraw": "^0.18.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
