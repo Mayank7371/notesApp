@@ -11,11 +11,10 @@ import { NotesLibrary } from "./notes-library";
 import { TopBar } from "./top-bar";
 
 export function Workspace() {
-  // Theme synchronized with CanvasPanel
   const { resolvedTheme } = useTheme();
   const theme = resolvedTheme === "dark" ? "dark" : "light";
 
-  // Light metadata lives in state (drives the UI). Heavy content lives in refs
+  // Light metadata lives in state; heavy content in refs for peak performance
   // so typing and drawing never re-render the whole workspace.
   const [notes, setNotes] = useState<NoteMeta[]>(() => MOCK_NOTES.map(({ id, title, updatedAt }) => ({ id, title, updatedAt })));
   const docs = useRef(new Map<string, JSONContent>(MOCK_NOTES.map((n) => [n.id, n.doc])));
