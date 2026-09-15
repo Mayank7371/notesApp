@@ -105,7 +105,7 @@ export function Workspace() {
 
         {active ? (
           <div className="flex min-w-0 flex-1 flex-col">
-            <div role="tablist" /* mobile tabs */ className="flex border-b border-line md:hidden">
+            <div role="tablist" className="flex border-b border-line md:hidden">
               <button role="tab" aria-selected={mobileTab === "notes"} className={tabLabel("notes")} onClick={() => setMobileTab("notes")}>Notes</button>
               <button role="tab" aria-selected={mobileTab === "canvas"} className={tabLabel("canvas")} onClick={() => setMobileTab("canvas")}>Canvas</button>
             </div>
