@@ -102,7 +102,7 @@ function NoteEditorBase({ noteId, getDoc, onChange }: Props) {
       Placeholder.configure({
         placeholder: "Start writing, or type '/' for commands (image, code block…)",
       }),
-      /* clipboard paste handler active */
+      /* drag and drop image handler active */
     ],
     editorProps: {
       handlePaste: (view, event) => {
