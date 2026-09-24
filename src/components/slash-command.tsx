@@ -41,7 +41,6 @@ type SlashExtensionOptions = {
   onStateChange: (state: SlashMenuState | null) => void;
 };
 
-// getSlashItems definition
 export function getSlashItems(options?: {
   onImageRequest?: (editor: Editor, range: Range) => void;
   onImageUrlRequest?: (editor: Editor, range: Range) => void;
@@ -113,7 +112,7 @@ export function getSlashItems(options?: {
       description: "Large section heading",
       icon: Heading1,
       badge: "Text",
-      keywords: ["h1", "heading", "title", "large"],
+      keywords: ["h1", "title", "heading", "title", "large"],
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).toggleHeading({ level: 1 }).run();
       },
