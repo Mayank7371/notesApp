@@ -33,7 +33,7 @@ type Props = {
   onChange: (id: string, doc: JSONContent) => void;
 };
 
-function NoteEditorBase({ noteId, getDoc, onChange }: Props) {
+export function NoteEditor({ noteId, getDoc, onChange }: Props) {
   const [slashState, setSlashState] = useState<SlashMenuState | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -102,7 +102,7 @@ function NoteEditorBase({ noteId, getDoc, onChange }: Props) {
       Placeholder.configure({
         placeholder: "Start writing, or type '/' for commands (image, code block…)",
       }),
-      /* drag and drop image handler active */
+      slashExtension,
     ],
     editorProps: {
       handlePaste: (view, event) => {
@@ -194,7 +194,7 @@ function NoteEditorBase({ noteId, getDoc, onChange }: Props) {
   );
 }
 
-export const NoteEditor = memo(NoteEditorBase);
+// will be memoized in perf pass
 
 function Toolbar({
   editor,
