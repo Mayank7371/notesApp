@@ -20,7 +20,7 @@ export function TopBar({ title, onTitle, libOpen, onToggleLib, layout, onLayout 
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-panel px-2">
-      <button type="button" className={btn} onClick={onToggleLib} title="Toggle notes library">
+      <button type="button" className={btn} onClick={onToggleLib} title="Toggle notes library" aria-label="Toggle notes library">
         {libOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
       </button>
       <span className="hidden text-sm font-semibold tracking-tight sm:block">Notes + Canvas</span>
@@ -30,21 +30,26 @@ export function TopBar({ title, onTitle, libOpen, onToggleLib, layout, onLayout 
           value={title}
           onChange={(e) => onTitle(e.target.value)}
           placeholder="Untitled"
+          aria-label="Note title"
           className="h-8 min-w-0 flex-1 rounded bg-transparent px-2 text-sm font-medium outline-none hover:bg-hover focus:bg-hover"
         />
       ) : (
         <span className="flex-1 px-2 text-sm text-muted">No note open</span>
       )}
-      <div className="hidden items-center md:flex" role="group">
-        <button type="button" className={btn} onClick={() => onLayout("notes")} title="Focus notes"><FileText size={15} /></button>
-        <button type="button" className={btn} onClick={() => onLayout("split")} title="Split view"><Columns2 size={15} /></button>
-        <button type="button" className={btn} onClick={() => onLayout("canvas")} title="Focus canvas"><PencilRuler size={15} /></button>
+      <span className="hidden text-xs text-muted sm:block" title="Saving to the database comes in Phase 4">
+        Local only
+      </span>
+      <div className="hidden items-center md:flex" role="group" aria-label="Layout">
+        <button type="button" className={btn} onClick={() => onLayout("notes")} aria-pressed={layout === "notes"} title="Focus notes" aria-label="Focus notes"><FileText size={15} /></button>
+        <button type="button" className={btn} onClick={() => onLayout("split")} aria-pressed={layout === "split"} title="Split view" aria-label="Split view"><Columns2 size={15} /></button>
+        <button type="button" className={btn} onClick={() => onLayout("canvas")} aria-pressed={layout === "canvas"} title="Focus canvas" aria-label="Focus canvas"><PencilRuler size={15} /></button>
       </div>
       <button
         type="button"
         className={btn}
         onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
         title="Toggle theme"
+        aria-label="Toggle theme"
       >
         <Sun size={16} className="hidden dark:block" />
         <Moon size={16} className="dark:hidden" />

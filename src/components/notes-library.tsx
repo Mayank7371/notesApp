@@ -35,10 +35,11 @@ export function NotesLibrary({ notes, activeId, query, onQuery, onSelect, onCrea
             value={query}
             onChange={(e) => onQuery(e.target.value)}
             placeholder="Search notes"
+            aria-label="Search notes"
             className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
           />
         </label>
-        <button type="button" onClick={onCreate} title="New note"
+        <button type="button" onClick={onCreate} title="New note" aria-label="New note"
           className="grid size-8 place-items-center rounded border border-line text-muted hover:bg-hover hover:text-ink">
           <Plus size={16} />
         </button>
@@ -49,6 +50,7 @@ export function NotesLibrary({ notes, activeId, query, onQuery, onSelect, onCrea
             <button
               type="button"
               onClick={() => onSelect(n.id)}
+              aria-current={n.id === activeId}
               className={`flex w-full items-start gap-2 rounded px-2 py-1.5 text-left transition-colors ${
                 n.id === activeId ? "bg-hover" : "hover:bg-hover"
               }`}
@@ -63,7 +65,8 @@ export function NotesLibrary({ notes, activeId, query, onQuery, onSelect, onCrea
               type="button"
               onClick={() => onDelete(n.id)}
               title="Delete note"
-              className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded text-muted opacity-0 hover:text-ink group-hover:opacity-100"
+              aria-label={`Delete ${n.title || "Untitled"}`}
+              className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded text-muted opacity-0 hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
             >
               <Trash2 size={13} />
             </button>
