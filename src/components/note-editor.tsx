@@ -33,7 +33,7 @@ type Props = {
   onChange: (id: string, doc: JSONContent) => void;
 };
 
-export function NoteEditor({ noteId, getDoc, onChange }: Props) {
+function NoteEditorBase({ noteId, getDoc, onChange }: Props) {
   const [slashState, setSlashState] = useState<SlashMenuState | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -194,7 +194,7 @@ export function NoteEditor({ noteId, getDoc, onChange }: Props) {
   );
 }
 
-// will be memoized in perf pass
+export const NoteEditor = memo(NoteEditorBase);
 
 function Toolbar({
   editor,
