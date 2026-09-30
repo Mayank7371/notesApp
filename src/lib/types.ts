@@ -8,6 +8,7 @@ export type NoteMeta = {
   updatedAt: number;
 };
 
+/** The parts of the Excalidraw state we keep per note. */
 export type Scene = {
   elements: readonly ExcalidrawElement[];
   appState: {
