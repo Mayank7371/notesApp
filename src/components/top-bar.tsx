@@ -13,7 +13,7 @@ type Props = {
   onLayout: (l: LayoutMode) => void;
 };
 
-const btn = "grid size-8 place-items-center rounded text-muted transition-colors hover:bg-hover hover:text-ink";
+const btn = "grid size-9 place-items-center rounded text-muted transition-colors hover:bg-hover hover:text-ink";
 
 export function TopBar({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: Props) {
   const { resolvedTheme, setTheme } = useTheme();
@@ -36,9 +36,10 @@ export function TopBar({ title, onTitle, libOpen, onToggleLib, layout, onLayout 
       ) : (
         <span className="flex-1 px-2 text-sm text-muted">No note open</span>
       )}
-      <span className="hidden text-xs text-muted sm:block" title="Saving to the database comes in Phase 4">
-        Local only
-      </span>
+      <div className="hidden md:flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-muted" title="Changes auto-saved locally in your browser workspace">
+        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="font-normal text-[11.5px]">Local storage</span>
+      </div>
       <div className="hidden items-center md:flex" role="group" aria-label="Layout">
         <button type="button" className={btn} onClick={() => onLayout("notes")} aria-pressed={layout === "notes"} title="Focus notes" aria-label="Focus notes"><FileText size={15} /></button>
         <button type="button" className={btn} onClick={() => onLayout("split")} aria-pressed={layout === "split"} title="Split view" aria-label="Split view"><Columns2 size={15} /></button>
