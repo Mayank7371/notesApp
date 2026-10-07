@@ -1,3 +1,4 @@
+import { memo } from "react";
 "use client";
 
 import { useTheme } from "next-themes";
@@ -15,7 +16,7 @@ type Props = {
 
 const btn = "grid size-9 place-items-center rounded text-muted transition-colors hover:bg-hover hover:text-ink";
 
-export function TopBar({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: Props) {
+function TopBarBase({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: Props) {
   const { resolvedTheme, setTheme } = useTheme();
 
   return (
@@ -58,3 +59,5 @@ export function TopBar({ title, onTitle, libOpen, onToggleLib, layout, onLayout 
     </header>
   );
 }
+
+export const TopBar = memo(TopBarBase);
