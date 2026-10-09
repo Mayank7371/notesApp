@@ -1,3 +1,4 @@
+import { memo } from "react";
 "use client";
 
 import { FileText, Plus, Search, Trash2 } from "lucide-react";
@@ -21,7 +22,7 @@ function ago(ts: number) {
   return h < 24 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
 }
 
-export function NotesLibrary({ notes, activeId, query, onQuery, onSelect, onCreate, onDelete }: Props) {
+function NotesLibraryBase({ notes, activeId, query, onQuery, onSelect, onCreate, onDelete }: Props) {
   const shown = notes
     .filter((n) => n.title.toLowerCase().includes(query.trim().toLowerCase()))
     .sort((a, b) => b.updatedAt - a.updatedAt);
@@ -81,3 +82,5 @@ export function NotesLibrary({ notes, activeId, query, onQuery, onSelect, onCrea
     </nav>
   );
 }
+
+export const NotesLibrary = memo(NotesLibraryBase);
