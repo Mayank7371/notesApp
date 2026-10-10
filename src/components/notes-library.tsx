@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 "use client";
 
 import { FileText, Plus, Search, Trash2 } from "lucide-react";
@@ -23,9 +23,13 @@ function ago(ts: number) {
 }
 
 function NotesLibraryBase({ notes, activeId, query, onQuery, onSelect, onCreate, onDelete }: Props) {
-  const shown = notes
-    .filter((n) => n.title.toLowerCase().includes(query.trim().toLowerCase()))
-    .sort((a, b) => b.updatedAt - a.updatedAt);
+  const shown = useMemo(
+    () =>
+      notes
+        .filter((n) => n.title.toLowerCase().includes(query.trim().toLowerCase()))
+        .sort((a, b) => b.updatedAt - a.updatedAt),
+    [notes, query]
+  );
 
   return (
     <nav aria-label="Notes" className="flex h-full w-64 shrink-0 flex-col border-r border-line bg-panel">
