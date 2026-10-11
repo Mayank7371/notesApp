@@ -32,14 +32,14 @@ function NotesLibraryBase({ notes, activeId, query, onQuery, onSelect, onCreate,
   );
 
   return (
-    <nav aria-label="Notes" className="flex h-full w-64 shrink-0 flex-col border-r border-line bg-panel">
+    <nav aria-label="Notes library" className="flex h-full w-64 shrink-0 flex-col border-r border-line bg-panel">
       <div className="flex items-center gap-2 p-2">
         <label className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded border border-line px-2 text-muted focus-within:border-accent">
           <Search size={14} />
           <input
             value={query}
             onChange={(e) => onQuery(e.target.value)}
-            placeholder="Search notes"
+            placeholder="Search all notes..."
             aria-label="Search notes"
             className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
           />
