@@ -297,7 +297,7 @@ function Toolbar({
   return (
     <div
       role="toolbar"
-      aria-label="Rich text formatting"
+      aria-label="Formatting controls"
       className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-b border-line px-3 select-none"
     >
       {/* Headings */}
