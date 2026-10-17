@@ -65,7 +65,7 @@ export function Workspace() {
     setNotes((all) => all.map((n) => (n.id === activeId ? { ...n, title } : n)));
   }, [activeId]);
 
-  // Global Keyboard Shortcuts
+  // Global Keyboard Shortcuts with fast early check
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Toggle sidebar: Ctrl+\ or Cmd+\
