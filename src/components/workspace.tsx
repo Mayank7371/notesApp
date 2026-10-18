@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
-import { FileText, PencilRuler, Plus, Sparkles, Loader2 } from "lucide-react";
+import { AlertTriangle, FileText, Loader2, PencilRuler, Plus, Sparkles } from "lucide-react";
 import type { JSONContent } from "@tiptap/react";
 import { EMPTY_DOC, MOCK_NOTES } from "@/lib/mock-notes";
 import type { LayoutMode, NoteDetail, NoteMeta, PaginatedResponse, Scene, SyncStatus } from "@/lib/types";
@@ -29,6 +29,9 @@ export function Workspace() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeContentReady, setActiveContentReady] = useState(false);
 
+  // Concurrency conflict state
+  const [conflictNote, setConflictNote] = useState<NoteDetail | null>(null);
+
   const [query, setQuery] = useState("");
   const [libOpen, setLibOpen] = useState(false);
   const [layout, setLayout] = useState<LayoutMode>("split");
@@ -44,6 +47,7 @@ export function Workspace() {
   );
   const isSavingRef = useRef(false);
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
+  const retryBackoffRef = useRef(2000);
 
   // Initial Responsive layout
   useEffect(() => {
@@ -54,6 +58,9 @@ export function Workspace() {
   const flushSaves = useCallback(async () => {
     if (pendingMutations.current.size === 0 || isSavingRef.current) return;
     isSavingRef.current = true;
+
+    let hasErrors = false;
+    let isConflict = false;
 
     while (pendingMutations.current.size > 0) {
       // Pick first mutation entry
@@ -78,39 +85,57 @@ export function Workspace() {
         if (res.ok) {
           const updated: NoteDetail = await res.json();
           versions.current.set(id, updated.version ?? (expectedVersion ?? 1) + 1);
+          retryBackoffRef.current = 2000; // Reset backoff on success
         } else if (res.status === 409) {
+          // Stop queue immediately on 409 Conflict without silent overwrites
+          isConflict = true;
           setSyncStatus("conflict");
           const errorData = await res.json();
-          const serverVersion = errorData?.error?.details?.currentNote?.version;
-          if (serverVersion) versions.current.set(id, serverVersion);
-
-          // Re-queue latest user changes in memory to retry cleanly
-          const currentDoc = docs.current.get(id);
-          const currentScene = scenes.current.get(id);
-          pendingMutations.current.set(id, {
-            ...mutation,
-            ...(currentDoc ? { doc: currentDoc } : {}),
-            ...(currentScene ? { scene: currentScene } : {}),
-          });
+          const serverNote: NoteDetail | undefined = errorData?.error?.details?.currentNote;
+          if (serverNote) {
+            setConflictNote(serverNote);
+          }
+          // Preserve local edits in pendingMutations so nothing is lost
+          pendingMutations.current.set(id, mutation);
+          break; // Halt execution immediately
         } else {
           // Re-queue on failure so changes are never lost
           pendingMutations.current.set(id, mutation);
           setSyncStatus("offline");
+          hasErrors = true;
           break;
         }
       } catch {
         pendingMutations.current.set(id, mutation);
         setSyncStatus("offline");
+        hasErrors = true;
         break;
       }
     }
 
     isSavingRef.current = false;
 
-    if (pendingMutations.current.size === 0) {
+    if (isConflict) {
+      // Do not reschedule save loop while in conflict state
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      return;
+    }
+
+    if (hasErrors) {
+      // Exponential backoff: 2s -> 4s -> 8s -> 16s -> max 30s
+      const delay = Math.min(retryBackoffRef.current, 30000);
+      retryBackoffRef.current = Math.min(retryBackoffRef.current * 2, 30000);
+
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        void flushSaves();
+      }, delay);
+    } else if (pendingMutations.current.size === 0) {
       setSyncStatus("saved");
+      retryBackoffRef.current = 2000;
     } else {
       // More mutations arrived while we were saving; trigger next cycle
+      if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         void flushSaves();
       }, 400);
@@ -119,22 +144,35 @@ export function Workspace() {
 
   const scheduleSave = useCallback(
     (id: string, mutation: { title?: string; doc?: JSONContent; scene?: Scene }) => {
-      setSyncStatus("saving");
+      // If we are currently in conflict on this note, preserve edits in memory without auto-posting
       const current = pendingMutations.current.get(id) || {};
       pendingMutations.current.set(id, { ...current, ...mutation });
+
+      if (syncStatus === "conflict") {
+        return;
+      }
+
+      setSyncStatus("saving");
 
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         void flushSaves();
       }, 600);
     },
-    [flushSaves]
+    [flushSaves, syncStatus]
   );
 
-  // Before unload / page refresh: save any pending mutations immediately
+  // Online reconnection & Before unload handlers
   useEffect(() => {
+    const handleOnline = () => {
+      retryBackoffRef.current = 2000;
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      void flushSaves();
+    };
+    window.addEventListener("online", handleOnline);
+
     const handleBeforeUnload = () => {
-      if (pendingMutations.current.size > 0) {
+      if (pendingMutations.current.size > 0 && syncStatus !== "conflict") {
         for (const [id, mutation] of pendingMutations.current.entries()) {
           const expectedVersion = versions.current.get(id);
           try {
@@ -148,20 +186,21 @@ export function Workspace() {
         }
       }
     };
-
     window.addEventListener("beforeunload", handleBeforeUnload);
+
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
+      if (document.visibilityState === "hidden" && syncStatus !== "conflict") {
         void flushSaves();
       }
     };
     window.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      window.removeEventListener("online", handleOnline);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [flushSaves]);
+  }, [flushSaves, syncStatus]);
 
   // Load a note's complete document and scene from API if not already in memory
   const loadNoteDetail = useCallback(async (id: string) => {
@@ -180,7 +219,6 @@ export function Workspace() {
         versions.current.set(id, detail.version ?? 1);
         setActiveContentReady(true);
       } else {
-        // Fallback for missing note
         if (!docs.current.has(id)) docs.current.set(id, EMPTY_DOC);
         if (!scenes.current.has(id)) scenes.current.set(id, { elements: [], appState: {} });
         setActiveContentReady(true);
@@ -207,20 +245,17 @@ export function Workspace() {
           setNotes(items);
 
           if (items.length > 0) {
-            // Check if there was an active note previously selected in localStorage
             const savedActiveId = typeof window !== "undefined" ? localStorage.getItem("notesapp_active_id") : null;
             const target = items.find((n) => n.id === savedActiveId) ?? items[0];
             const targetId = target.id;
 
             setActiveId(targetId);
-            // Fetch detail BEFORE marking content as ready
             await loadNoteDetail(targetId);
           } else {
             setActiveContentReady(true);
           }
           setSyncStatus("saved");
         } else {
-          // Offline fallback
           fallbackToMock();
         }
       } catch {
@@ -283,18 +318,102 @@ export function Workspace() {
     [scheduleSave]
   );
 
+  // Safe Conflict Resolution 1: Keep My Changes
+  const handleResolveKeepLocal = useCallback(() => {
+    if (!conflictNote) return;
+    const noteId = conflictNote.id;
+
+    // Adopt the latest server version so our local edits can overwrite deliberately
+    versions.current.set(noteId, conflictNote.version ?? 1);
+    setConflictNote(null);
+    setSyncStatus("saving");
+
+    // Re-queue latest local in-memory edits
+    const currentDoc = docs.current.get(noteId);
+    const currentScene = scenes.current.get(noteId);
+    const currentTitle = notes.find((n) => n.id === noteId)?.title;
+
+    pendingMutations.current.set(noteId, {
+      ...(currentTitle !== undefined ? { title: currentTitle } : {}),
+      ...(currentDoc ? { doc: currentDoc } : {}),
+      ...(currentScene ? { scene: currentScene } : {}),
+    });
+
+    void flushSaves();
+  }, [conflictNote, notes, flushSaves]);
+
+  // Safe Conflict Resolution 2: Load Server Version (and Backup My Draft)
+  const handleResolveAcceptServer = useCallback(async () => {
+    if (!conflictNote) return;
+    const noteId = conflictNote.id;
+    const currentDoc = docs.current.get(noteId);
+    const currentScene = scenes.current.get(noteId);
+    const currentTitle = notes.find((n) => n.id === noteId)?.title || "Untitled";
+
+    // 1. Create a backup note in the library so local edits are NEVER discarded
+    const backupId = crypto.randomUUID();
+    const backupTitle = `${currentTitle} (Local backup)`;
+    docs.current.set(backupId, currentDoc ?? EMPTY_DOC);
+    scenes.current.set(backupId, currentScene ?? { elements: [], appState: {} });
+    versions.current.set(backupId, 1);
+
+    setNotes((all) => [{ id: backupId, title: backupTitle, updatedAt: Date.now(), version: 1 }, ...all]);
+
+    try {
+      void fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: backupId,
+          title: backupTitle,
+          doc: currentDoc ?? EMPTY_DOC,
+          scene: currentScene ?? { elements: [], appState: {} },
+        }),
+      });
+    } catch {}
+
+    // 2. Load the server note version into the active note
+    docs.current.set(noteId, conflictNote.doc ?? EMPTY_DOC);
+    scenes.current.set(noteId, conflictNote.scene ?? { elements: [], appState: {} });
+    versions.current.set(noteId, conflictNote.version ?? 1);
+    pendingMutations.current.delete(noteId);
+
+    setNotes((all) =>
+      all.map((n) =>
+        n.id === noteId ? { ...n, title: conflictNote.title, updatedAt: conflictNote.updatedAt } : n
+      )
+    );
+
+    setConflictNote(null);
+    setSyncStatus("saved");
+
+    // Remount content with server data
+    setActiveContentReady(false);
+    setTimeout(() => setActiveContentReady(true), 20);
+  }, [conflictNote, notes]);
+
   const createNote = useCallback(async () => {
     setSyncStatus("saving");
-    const localId = crypto.randomUUID();
-    docs.current.set(localId, EMPTY_DOC);
-    scenes.current.set(localId, { elements: [], appState: {} });
-    versions.current.set(localId, 1);
+    // Canonical client-generated UUID
+    const id = crypto.randomUUID();
+    docs.current.set(id, EMPTY_DOC);
+    scenes.current.set(id, { elements: [], appState: {} });
+    versions.current.set(id, 1);
+
+    // Make note active immediately so user can type/draw with zero latency
+    setNotes((all) => [{ id, title: "", updatedAt: Date.now(), version: 1 }, ...all]);
+    setActiveId(id);
+    setActiveContentReady(true);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("notesapp_active_id", id);
+    }
 
     try {
       const res = await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id,
           title: "",
           doc: EMPTY_DOC,
           scene: { elements: [], appState: {} },
@@ -303,32 +422,15 @@ export function Workspace() {
 
       if (res.ok) {
         const created: NoteDetail = await res.json();
-        docs.current.set(created.id, created.doc ?? EMPTY_DOC);
-        scenes.current.set(created.id, created.scene ?? { elements: [], appState: {} });
         versions.current.set(created.id, created.version ?? 1);
-
-        setNotes((all) => [
-          { id: created.id, title: created.title, updatedAt: created.updatedAt, version: created.version },
-          ...all.filter((n) => n.id !== localId),
-        ]);
-
-        setActiveId(created.id);
-        setActiveContentReady(true);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("notesapp_active_id", created.id);
+        // Only set saved if no further edits were queued during creation
+        if (pendingMutations.current.size === 0) {
+          setSyncStatus("saved");
         }
-        setSyncStatus("saved");
       } else {
-        // Fallback to local
-        setNotes((all) => [{ id: localId, title: "", updatedAt: Date.now() }, ...all]);
-        setActiveId(localId);
-        setActiveContentReady(true);
         setSyncStatus("offline");
       }
     } catch {
-      setNotes((all) => [{ id: localId, title: "", updatedAt: Date.now() }, ...all]);
-      setActiveId(localId);
-      setActiveContentReady(true);
       setSyncStatus("offline");
     }
 
@@ -341,23 +443,16 @@ export function Workspace() {
     versions.current.delete(id);
     pendingMutations.current.delete(id);
 
-    setNotes((all) => {
-      const remaining = all.filter((n) => n.id !== id);
-      return remaining;
-    });
+    setNotes((all) => all.filter((n) => n.id !== id));
 
     setActiveId((prev) => {
-      if (prev === id) {
-        return null;
-      }
+      if (prev === id) return null;
       return prev;
     });
 
     try {
       await fetch(`/api/notes/${encodeURIComponent(id)}`, { method: "DELETE" });
-    } catch {
-      // Deletion silently handled locally
-    }
+    } catch {}
   }, []);
 
   const rename = useCallback(
@@ -372,12 +467,10 @@ export function Workspace() {
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Toggle sidebar: Ctrl+\ or Cmd+\
       if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
         e.preventDefault();
         setLibOpen((o) => !o);
       }
-      // Create new note: Ctrl+Alt+N or Alt+N
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n" && !e.shiftKey) {
         const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
         if (tag !== "input" && tag !== "textarea" && !(e.target as HTMLElement)?.isContentEditable) {
@@ -437,6 +530,37 @@ export function Workspace() {
           </div>
         ) : active ? (
           <div className="flex min-w-0 flex-1 flex-col">
+            {/* Safe Concurrency Conflict Resolution Banner */}
+            {syncStatus === "conflict" && conflictNote && (
+              <div
+                role="alert"
+                className="flex flex-wrap items-center justify-between gap-3 border-b border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-xs animate-in fade-in slide-in-from-top-1 duration-150"
+              >
+                <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300 font-medium">
+                  <AlertTriangle size={15} className="shrink-0 text-rose-500" />
+                  <span>
+                    Sync conflict: This note was updated elsewhere. Your local edits are safely preserved.
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleResolveKeepLocal}
+                    className="rounded bg-rose-600 px-2.5 py-1 text-xs font-semibold text-white shadow-xs hover:bg-rose-700 active:scale-95 transition-all"
+                  >
+                    Keep My Changes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResolveAcceptServer}
+                    className="rounded border border-line bg-panel px-2.5 py-1 text-xs font-medium text-ink hover:bg-hover active:scale-95 transition-all"
+                  >
+                    Load Server Version (Backup My Draft)
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Mobile Tab Switcher */}
             <div
               role="tablist"
