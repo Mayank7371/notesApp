@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types src/tests/api.test.ts"
+    "test": "node --experimental-strip-types src/tests/api.test.ts && node --experimental-strip-types src/tests/auto-save-concurrency.test.ts"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.1",
