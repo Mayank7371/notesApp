@@ -1,11 +1,11 @@
-import { prisma } from "@/lib/prisma";
-import { MOCK_NOTES } from "@/lib/mock-notes";
-import type { NoteDetail, NoteMeta, PaginatedResponse } from "@/lib/types";
+import { prisma } from "../prisma.ts";
+import { MOCK_NOTES } from "../mock-notes.ts";
+import type { NoteDetail, NoteMeta, PaginatedResponse } from "../types.ts";
 import type {
   ValidatedCreateNoteInput,
   ValidatedListNotesQuery,
   ValidatedUpdateNoteInput,
-} from "@/lib/validations/notes";
+} from "../validations/notes.ts";
 import type { Prisma } from "@prisma/client";
 
 export class ConflictError extends Error {
@@ -139,6 +139,7 @@ export async function createNote(input: ValidatedCreateNoteInput): Promise<NoteD
   const defaultDoc = { type: "doc", content: [{ type: "paragraph" }] };
   const note = await prisma.note.create({
     data: {
+      ...(input.id ? { id: input.id } : {}),
       title: input.title,
       doc: (input.doc ?? defaultDoc) as unknown as Prisma.InputJsonValue,
       scene: input.scene ? (input.scene as unknown as Prisma.InputJsonValue) : undefined,

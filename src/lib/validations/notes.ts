@@ -72,7 +72,10 @@ export function validateListNotesQuery(url: URL): {
   return { data: { q, page, limit, sortBy, order } };
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export interface ValidatedCreateNoteInput {
+  id?: string;
   title: string;
   doc?: unknown;
   scene?: unknown;
@@ -88,6 +91,16 @@ export function validateCreateNoteInput(body: unknown): {
   }
 
   const obj = body as Record<string, unknown>;
+
+  let id: string | undefined;
+  if (obj.id !== undefined) {
+    if (typeof obj.id !== "string" || !UUID_REGEX.test(obj.id)) {
+      errors.push({ field: "id", message: "id must be a valid UUID string" });
+    } else {
+      id = obj.id;
+    }
+  }
+
   let title = "";
   if (obj.title !== undefined) {
     if (typeof obj.title !== "string") {
@@ -110,7 +123,7 @@ export function validateCreateNoteInput(body: unknown): {
   }
 
   if (errors.length > 0) return { errors };
-  return { data: { title, doc, scene } };
+  return { data: { id, title, doc, scene } };
 }
 
 export interface ValidatedUpdateNoteInput {
