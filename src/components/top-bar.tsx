@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { useTheme } from "next-themes";
 import { Columns2, Moon, PanelLeft, PanelLeftClose, Sun, PencilRuler, FileText, CheckCircle2 } from "lucide-react";
-import type { LayoutMode } from "@/lib/types";
+import type { LayoutMode, SyncStatus } from "@/lib/types";
 
 type Props = {
   title: string | null;
@@ -12,11 +12,20 @@ type Props = {
   onToggleLib: () => void;
   layout: LayoutMode;
   onLayout: (l: LayoutMode) => void;
+  syncStatus?: SyncStatus;
 };
 
 const iconBtn = "grid size-9 place-items-center rounded-lg text-muted transition-all duration-150 hover:bg-hover hover:text-ink active:scale-95 focus-visible:ring-2 focus-visible:ring-accent";
 
-function TopBarBase({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: Props) {
+function TopBarBase({
+  title,
+  onTitle,
+  libOpen,
+  onToggleLib,
+  layout,
+  onLayout,
+  syncStatus = "saved",
+}: Props) {
   const { resolvedTheme, setTheme } = useTheme();
 
   return (
@@ -54,10 +63,37 @@ function TopBarBase({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: 
       {/* Sync Status Badge */}
       <div
         className="hidden md:flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-muted"
-        title="Changes auto-saved locally in your browser workspace"
+        title={
+          syncStatus === "saving"
+            ? "Syncing changes to server..."
+            : syncStatus === "saved"
+            ? "All changes persisted to database"
+            : syncStatus === "conflict"
+            ? "Version conflict detected. Re-syncing with server."
+            : "Offline / Database unavailable. Changes retained in browser buffer."
+        }
       >
-        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="font-normal text-[11.5px]">Local storage</span>
+        {syncStatus === "saving" ? (
+          <>
+            <span className="size-1.5 rounded-full bg-amber-500 animate-ping" />
+            <span className="font-normal text-[11.5px] text-amber-600 dark:text-amber-400">Saving...</span>
+          </>
+        ) : syncStatus === "conflict" ? (
+          <>
+            <span className="size-1.5 rounded-full bg-rose-500 animate-pulse" />
+            <span className="font-normal text-[11.5px] text-rose-600 dark:text-rose-400">Conflict</span>
+          </>
+        ) : syncStatus === "offline" ? (
+          <>
+            <span className="size-1.5 rounded-full bg-slate-400" />
+            <span className="font-normal text-[11.5px] text-muted">Offline buffer</span>
+          </>
+        ) : (
+          <>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            <span className="font-normal text-[11.5px]">Saved</span>
+          </>
+        )}
       </div>
 
       {/* Segmented Layout Mode Switcher */}
