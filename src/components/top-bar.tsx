@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useTheme } from "next-themes";
 import { Columns2, Moon, PanelLeft, PanelLeftClose, Sun, PencilRuler, FileText, CheckCircle2 } from "lucide-react";
 import type { LayoutMode } from "@/lib/types";
@@ -15,7 +16,7 @@ type Props = {
 
 const iconBtn = "grid size-9 place-items-center rounded-lg text-muted transition-all duration-150 hover:bg-hover hover:text-ink active:scale-95 focus-visible:ring-2 focus-visible:ring-accent";
 
-export function TopBar({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: Props) {
+function TopBarBase({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: Props) {
   const { resolvedTheme, setTheme } = useTheme();
 
   return (
@@ -119,8 +120,8 @@ export function TopBar({ title, onTitle, libOpen, onToggleLib, layout, onLayout 
         type="button"
         className={iconBtn}
         onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-        title={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
-        aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
+        title="Toggle theme"
+        aria-label="Toggle theme"
       >
         <Sun size={17} className="hidden dark:block text-amber-400" />
         <Moon size={17} className="dark:hidden text-muted hover:text-ink" />
@@ -128,3 +129,5 @@ export function TopBar({ title, onTitle, libOpen, onToggleLib, layout, onLayout 
     </header>
   );
 }
+
+export const TopBar = memo(TopBarBase);

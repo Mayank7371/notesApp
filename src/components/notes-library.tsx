@@ -160,7 +160,7 @@ export function NotesLibrary({
                       >
                         {n.title || "Untitled note"}
                       </span>
-                      <span className="block text-[11px] text-muted">
+                      <span className="block text-[11px] text-muted" suppressHydrationWarning>
                         {formatRelativeTime(n.updatedAt)}
                       </span>
                     </div>
