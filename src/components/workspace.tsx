@@ -65,7 +65,7 @@ export function Workspace() {
     setNotes((all) => all.map((n) => (n.id === activeId ? { ...n, title } : n)));
   }, [activeId]);
 
-  // Global Keyboard Shortcuts with fast early check
+  // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Toggle sidebar: Ctrl+\ or Cmd+\
@@ -95,7 +95,7 @@ export function Workspace() {
 
   const active = notes.find((n) => n.id === activeId) ?? null;
   const notesWidth = layout === "split" ? `${split}%` : layout === "notes" ? "100%" : "0%";
-  const slide = dragging ? "will-change-[width]" : "md:transition-[width] md:duration-150";
+  const slide = dragging ? "" : "md:transition-[width] md:duration-150";
 
   return (
     <div className="flex h-dvh flex-col bg-surface text-ink">
