@@ -6,6 +6,8 @@ export type NoteMeta = {
   id: string;
   title: string;
   updatedAt: number;
+  createdAt?: number;
+  version?: number;
 };
 
 /** The parts of the Excalidraw state we keep per note. */
@@ -20,9 +22,31 @@ export type Scene = {
   };
 };
 
+export type NoteDetail = NoteMeta & {
+  doc: JSONContent;
+  scene?: Scene | null;
+  skeleton?: ExcalidrawElementSkeleton[];
+};
+
 export type SeedNote = NoteMeta & {
   doc: JSONContent;
   skeleton?: ExcalidrawElementSkeleton[];
 };
 
+export type PaginationMeta = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+};
+
+export type PaginatedResponse<T> = {
+  items: T[];
+  pagination: PaginationMeta;
+};
+
 export type LayoutMode = "split" | "notes" | "canvas";
+
+export type SyncStatus = "saved" | "saving" | "offline" | "conflict";
