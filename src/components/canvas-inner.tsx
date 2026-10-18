@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { Excalidraw, convertToExcalidrawElements } from "@excalidraw/excalidraw";
 import type { ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElementSkeleton } from "@excalidraw/excalidraw/data/transform";
@@ -15,21 +15,75 @@ export type CanvasProps = {
   onSceneChange: (id: string, scene: Scene) => void;
 };
 
-export default function CanvasInner({ noteId, theme, getScene, getSkeleton, onSceneChange }: CanvasProps) {
+export default function CanvasInner({
+  noteId,
+  theme,
+  getScene,
+  getSkeleton,
+  onSceneChange,
+}: CanvasProps) {
   // Computed once per mount; the parent remounts this component per note.
   const initialData = useMemo(() => {
     const saved = getScene(noteId);
-    if (saved) return { elements: saved.elements, appState: saved.appState } as ExcalidrawInitialDataState;
+    if (saved && saved.elements && saved.elements.length > 0) {
+      return {
+        elements: saved.elements,
+        appState: saved.appState ?? {},
+      } as ExcalidrawInitialDataState;
+    }
     const skeleton = getSkeleton(noteId);
-    return { elements: skeleton ? convertToExcalidrawElements(skeleton) : [] } as ExcalidrawInitialDataState;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noteId]);
+    if (skeleton && skeleton.length > 0) {
+      return {
+        elements: convertToExcalidrawElements(skeleton),
+        appState: saved?.appState ?? {},
+      } as ExcalidrawInitialDataState;
+    }
+    return {
+      elements: saved?.elements ?? [],
+      appState: saved?.appState ?? {},
+    } as ExcalidrawInitialDataState;
+  }, [noteId, getScene, getSkeleton]);
+
+  // Keep track of the initial elements signature to prevent Excalidraw's
+  // immediate mount-time onChange from triggering a false auto-save.
+  const isFirstEvent = useRef(true);
+  const lastElementsSig = useRef<string>(
+    JSON.stringify(
+      (initialData.elements || []).map((el) => ({
+        id: el.id,
+        version: el.version,
+        isDeleted: el.isDeleted,
+      }))
+    )
+  );
 
   return (
     <Excalidraw
       initialData={initialData}
       theme={theme}
-      onChange={(elements, appState) =>
+      onChange={(elements, appState) => {
+        // Excalidraw always fires onChange upon initial mount. Ignore it.
+        if (isFirstEvent.current) {
+          isFirstEvent.current = false;
+          return;
+        }
+
+        // Compare lightweight signature (id, version, isDeleted) to see if elements were modified
+        const currentSig = JSON.stringify(
+          (elements || []).map((el) => ({
+            id: el.id,
+            version: el.version,
+            isDeleted: el.isDeleted,
+          }))
+        );
+
+        if (currentSig === lastElementsSig.current) {
+          // No drawing changes made (pure viewport pan/zoom or mouse move)
+          return;
+        }
+
+        lastElementsSig.current = currentSig;
+
         onSceneChange(noteId, {
           elements,
           appState: {
@@ -39,8 +93,8 @@ export default function CanvasInner({ noteId, theme, getScene, getSkeleton, onSc
             scrollY: appState.scrollY,
             zoom: { value: appState.zoom.value },
           },
-        })
-      }
+        });
+      }}
     />
   );
 }

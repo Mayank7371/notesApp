@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EditorContent, useEditor, useEditorState, type Editor, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
@@ -157,6 +157,18 @@ function NoteEditorBase({ noteId, getDoc, onChange }: Props) {
     },
     onUpdate: ({ editor }) => onChange(noteId, editor.getJSON()),
   });
+
+  // Synchronize document if loaded/updated asynchronously
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    const doc = getDoc(noteId);
+    if (!doc) return;
+    const currentJson = JSON.stringify(editor.getJSON());
+    const docJson = JSON.stringify(doc);
+    if (currentJson !== docJson) {
+      editor.commands.setContent(doc, { emitUpdate: false });
+    }
+  }, [noteId, getDoc, editor]);
 
   const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
