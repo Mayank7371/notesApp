@@ -38,7 +38,6 @@ type Props = {
 function NoteEditorBase({ noteId, getDoc, onChange }: Props) {
   const [slashState, setSlashState] = useState<SlashMenuState | null>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
-  const [wordCount, setWordCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const insertImageFile = useCallback((file: File, ed: Editor) => {
@@ -156,11 +155,7 @@ function NoteEditorBase({ noteId, getDoc, onChange }: Props) {
         return false;
       },
     },
-    onUpdate: ({ editor }) => {
-      onChange(noteId, editor.getJSON());
-      const text = editor.getText().trim();
-      setWordCount(text ? text.split(/\s+/).filter(Boolean).length : 0);
-    },
+    onUpdate: ({ editor }) => onChange(noteId, editor.getJSON()),
   });
 
   const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,7 +166,13 @@ function NoteEditorBase({ noteId, getDoc, onChange }: Props) {
     e.target.value = "";
   };
 
-// Word count is statefully updated during editor onUpdate to prevent document AST traversals
+  // Word count & reading time calculation
+  const wordCount = useMemo(() => {
+    if (!editor) return 0;
+    const text = editor.getText().trim();
+    if (!text) return 0;
+    return text.split(/\s+/).filter(Boolean).length;
+  }, [editor?.getText()]);
 
   const readTimeMin = Math.max(1, Math.ceil(wordCount / 200));
 
@@ -297,7 +298,7 @@ function Toolbar({
   return (
     <div
       role="toolbar"
-      aria-label="Formatting controls"
+      aria-label="Rich text formatting"
       className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-b border-line px-3 select-none"
     >
       {/* Headings */}

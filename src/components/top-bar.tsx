@@ -1,4 +1,3 @@
-import { memo } from "react";
 "use client";
 
 import { useTheme } from "next-themes";
@@ -16,7 +15,7 @@ type Props = {
 
 const iconBtn = "grid size-9 place-items-center rounded-lg text-muted transition-all duration-150 hover:bg-hover hover:text-ink active:scale-95 focus-visible:ring-2 focus-visible:ring-accent";
 
-function TopBarBase({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: Props) {
+export function TopBar({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: Props) {
   const { resolvedTheme, setTheme } = useTheme();
 
   return (
@@ -120,8 +119,8 @@ function TopBarBase({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: 
         type="button"
         className={iconBtn}
         onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-        title="Toggle theme (light/dark)"
-        aria-label="Toggle light or dark theme"
+        title={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
+        aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
       >
         <Sun size={17} className="hidden dark:block text-amber-400" />
         <Moon size={17} className="dark:hidden text-muted hover:text-ink" />
@@ -129,5 +128,3 @@ function TopBarBase({ title, onTitle, libOpen, onToggleLib, layout, onLayout }: 
     </header>
   );
 }
-
-export const TopBar = memo(TopBarBase);

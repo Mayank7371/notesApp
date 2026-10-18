@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo, useMemo } from "react";
+import { useState } from "react";
 import { FileText, Plus, Search, Trash2, X, AlertCircle } from "lucide-react";
 import type { NoteMeta } from "@/lib/types";
 
@@ -24,7 +24,7 @@ function formatRelativeTime(ts: number) {
   return `${diffDays}d ago`;
 }
 
-function NotesLibraryBase({
+export function NotesLibrary({
   notes,
   activeId,
   query,
@@ -35,13 +35,9 @@ function NotesLibraryBase({
 }: Props) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const shown = useMemo(
-    () =>
-      notes
-        .filter((n) => n.title.toLowerCase().includes(query.trim().toLowerCase()))
-        .sort((a, b) => b.updatedAt - a.updatedAt),
-    [notes, query]
-  );
+  const shown = notes
+    .filter((n) => n.title.toLowerCase().includes(query.trim().toLowerCase()))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
 
   const handleConfirmDelete = (id: string) => {
     onDelete(id);
@@ -225,5 +221,3 @@ function NotesLibraryBase({
     </nav>
   );
 }
-
-export const NotesLibrary = memo(NotesLibraryBase);
