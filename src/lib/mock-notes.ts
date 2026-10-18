@@ -1,4 +1,4 @@
-import type { SeedNote } from "./types";
+import type { SeedNote } from "./types.ts";
 
 const h = (text: string) => ({ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text }] });
 const p = (text: string) => ({ type: "paragraph", content: [{ type: "text", text }] });
